@@ -14,7 +14,7 @@ export async function attestClaim(
     client: { public: publicClient, wallet: walletClient },
   });
 
-  const hash = await contract.write.fileClaim([filecoinCid], { account });
+  const hash = await contract.write.fileClaim([filecoinCid], { account: walletClient.account });
   await publicClient.waitForTransactionReceipt({ hash });
   return hash;
 }
