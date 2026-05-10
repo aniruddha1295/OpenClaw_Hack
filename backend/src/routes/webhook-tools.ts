@@ -11,6 +11,26 @@ import { createEasClient, createEasSigner, issueAttestation, loadEasSdk } from '
 import { config } from '../config/environment.js';
 
 export default async function webhookToolsRoutes(fastify: FastifyInstance) {
+  // GET /tools/force-demo — force trigger a fake claim and Filecoin upload for demo purposes
+  fastify.get('/tools/force-demo', async (request) => {
+    try {
+      const result = await fileClaim(fastify.supabase, {
+        policy_number: 'POL-2024-001234',
+        claim_type: 'auto',
+        incident_date: new Date().toISOString(),
+        incident_description: 'Demo triggered manually from the browser.',
+      });
+
+      if (result.success && result.claim_id) {
+        const evidence = await processClaimEvidence(fastify, result.claim_id);
+        return { message: 'Demo success!', claim_id: result.claim_id, ...evidence };
+      }
+      return { message: 'Failed to create demo claim' };
+    } catch (err) {
+      return { message: 'Error running demo', error: String(err) };
+    }
+  });
+
   // POST /tools/lookup-claim — look up a claim by claim number
   fastify.post('/tools/lookup-claim', async (request) => {
     try {
