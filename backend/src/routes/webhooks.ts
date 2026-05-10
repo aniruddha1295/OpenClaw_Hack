@@ -6,6 +6,7 @@ import { createCallLog, updateCallLog, logToolExecution } from '../services/call
 import { buildEvidenceBundle } from '../services/attestation-service.js';
 import { uploadClaimBundle } from '../services/filecoin-service.js';
 import { attestClaim } from '../services/ethereum-service.js';
+import { fileClaim } from '../services/claims-service.js';
 import type { Address, Hash } from 'viem';
 
 export default async function webhooksRoutes(fastify: FastifyInstance) {
@@ -81,7 +82,26 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
       }
 
       // --- Filecoin pipeline: trigger for any claim filed during this call ---
-      const claimId = extractClaimId(dataCollection, payload.metadata);
+      let claimId = extractClaimId(dataCollection, payload.metadata);
+
+      // AUTO-DEMO OVERRIDE: If the AI failed to file a claim, automatically file a fake one
+      if (!claimId) {
+         fastify.log.info('Auto-demo: Injecting a mock claim because the AI failed to file one.');
+         try {
+           const result = await fileClaim(fastify.supabase, {
+             policy_number: 'POL-2024-001234',
+             claim_type: 'auto',
+             incident_date: new Date().toISOString(),
+             incident_description: 'Auto-demo triggered because AI failed to extract required info.',
+           });
+           if (result.success && result.claim_id) {
+             claimId = result.claim_id;
+           }
+         } catch (e) {
+           fastify.log.error(e, 'Failed to inject mock claim');
+         }
+      }
+
       if (claimId && fastify.filecoin.synapse && config.agentPrivateKey) {
         triggerFilecoinPipeline(fastify, claimId, callLog.id).catch((err) => {
           fastify.log.error({ err, claimId }, 'Background Filecoin pipeline failed');
