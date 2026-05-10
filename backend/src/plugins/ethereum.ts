@@ -32,7 +32,7 @@ export default fp(async function ethereumPlugin(fastify: FastifyInstance) {
     });
   }
 
-  fastify.decorate('ethereum', { publicClient, walletClient, account });
+  fastify.decorate('ethereum', { publicClient, walletClient, account } as any);
 }, {
   name: 'ethereum',
 });

@@ -375,8 +375,8 @@ async function processClaimEvidence(fastify: FastifyInstance, claimId: string) {
   let txHash: Hash | null = null;
   if (fastify.ethereum.walletClient && fastify.ethereum.account) {
     txHash = await attestClaim(
-      fastify.ethereum.publicClient,
-      fastify.ethereum.walletClient,
+      fastify.ethereum.publicClient as any,
+      fastify.ethereum.walletClient as any,
       config.claimRegistryAddress as Address,
       fastify.ethereum.account as Address,
       upload.rootCid
