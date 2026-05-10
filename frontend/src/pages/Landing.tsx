@@ -49,10 +49,10 @@ export default function Landing() {
 
           {/* Right: Auth buttons */}
           <div className="flex items-center gap-3 shrink-0">
-            <button onClick={() => navigate('/')} className="text-base text-gray-600 hover:text-gray-900 transition-colors px-3 py-2">
+            <button onClick={() => navigate('/claims')} className="text-base text-gray-600 hover:text-gray-900 transition-colors px-3 py-2">
               Log in
             </button>
-            <button onClick={() => navigate('/')} className="bg-gray-900 text-white text-base font-medium px-6 py-3 rounded-full hover:bg-gray-700 transition-colors">
+            <button onClick={() => navigate('/claims')} className="bg-gray-900 text-white text-base font-medium px-6 py-3 rounded-full hover:bg-gray-700 transition-colors">
               Get Started
             </button>
           </div>
@@ -118,7 +118,7 @@ export default function Landing() {
             SafeGuard's AI voice agent processes claims in real time — from the first call to on-chain attestation. No paperwork. No delays.
           </p>
           <div className="flex flex-wrap gap-3 shrink-0">
-            <button onClick={() => navigate('/')} className="bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-gray-700 transition-colors flex items-center gap-2">
+            <button onClick={() => navigate('/claims')} className="bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-gray-700 transition-colors flex items-center gap-2">
               Start a Claim <ArrowRight className="w-4 h-4" />
             </button>
             <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} className="border border-gray-400 text-gray-700 text-sm font-medium px-6 py-3 rounded-full hover:bg-gray-100 transition-colors">
@@ -268,7 +268,7 @@ export default function Landing() {
             <p className="text-lg text-gray-600 mb-8">
               No setup fees. Deploy in minutes. Full audit trail from day one.
             </p>
-            <button onClick={() => navigate('/')} className="bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-gray-700 transition-colors flex items-center gap-2">
+            <button onClick={() => navigate('/claims')} className="bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-gray-700 transition-colors flex items-center gap-2">
               Get Started Free <ArrowRight className="w-4 h-4" />
             </button>
           </div>

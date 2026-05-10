@@ -2,7 +2,7 @@ import { NavLink, Link } from 'react-router-dom'
 import { FileText, Phone, BarChart3, Settings, Headphones, Database, Shield } from 'lucide-react'
 
 const navItems = [
-  { to: '/', icon: FileText, label: 'Claims' },
+  { to: '/claims', icon: FileText, label: 'Claims' },
   { to: '/calls', icon: Phone, label: 'Call History' },
   { to: '/live', icon: Headphones, label: 'Live Call' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
@@ -13,7 +13,7 @@ const navItems = [
 export function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <Link to="/landing">
+      <Link to="/">
         <div className="p-6 border-b border-gray-200 cursor-pointer hover:opacity-80 transition-opacity">
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-blue-600" />
