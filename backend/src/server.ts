@@ -51,7 +51,7 @@ fastify.get('/version', async () => ({
 // Start server
 const start = async () => {
   try {
-    await fastify.listen({ port: config.port, host: '127.0.0.1' });
+    await fastify.listen({ port: config.port, host: '0.0.0.0' });
     fastify.log.info(`Server running on port ${config.port}`);
   } catch (err) {
     fastify.log.error(err);
