@@ -36,6 +36,6 @@ export function computeEvidenceHash(input: JsonValue): string {
 }
 
 export function buildEvidenceBundle(input: EvidenceBundle): { bundle: EvidenceBundle; hash: string } {
-  const hash = computeEvidenceHash(input as JsonValue);
+  const hash = computeEvidenceHash(input as unknown as JsonValue);
   return { bundle: input, hash };
 }

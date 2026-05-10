@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
-import { createPublicClient, createWalletClient, http, type Address } from 'viem';
+import { createPublicClient, createWalletClient, http, type Address, type PublicClient, type WalletClient, type Transport, type Chain } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import { config } from '../config/environment.js';
@@ -8,8 +8,8 @@ import { config } from '../config/environment.js';
 declare module 'fastify' {
   interface FastifyInstance {
     ethereum: {
-      publicClient: ReturnType<typeof createPublicClient>;
-      walletClient: ReturnType<typeof createWalletClient> | null;
+      publicClient: PublicClient<Transport, Chain>;
+      walletClient: WalletClient<Transport, Chain> | null;
       account: Address | null;
     };
   }
@@ -20,7 +20,7 @@ export default fp(async function ethereumPlugin(fastify: FastifyInstance) {
     chain: baseSepolia,
     transport: http(config.baseSepoliaRpcUrl),
   });
-  let walletClient: ReturnType<typeof createWalletClient> | null = null;
+  let walletClient: WalletClient<Transport, Chain> | null = null;
   let account: Address | null = null;
   if (config.agentPrivateKey) {
     const agentAccount = privateKeyToAccount(config.agentPrivateKey as Address);

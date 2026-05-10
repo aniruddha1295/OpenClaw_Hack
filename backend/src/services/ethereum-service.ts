@@ -1,9 +1,9 @@
-import { getContract, type Address, type Hash, type PublicClient, type WalletClient } from 'viem';
+import { getContract, type Address, type Hash, type PublicClient, type WalletClient, type Transport, type Chain, type Account } from 'viem';
 import ClaimRegistryAbi from '../abis/ClaimRegistry.json';
 
 export async function attestClaim(
-  publicClient: PublicClient,
-  walletClient: WalletClient,
+  publicClient: PublicClient<Transport, Chain>,
+  walletClient: WalletClient<Transport, Chain, Account>,
   claimRegistryAddress: Address,
   account: Address,
   filecoinCid: string
