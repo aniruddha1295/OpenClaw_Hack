@@ -1,18 +1,21 @@
-export interface SynapseClient {
-  uploadClaimBundle: (bundle: unknown) => Promise<{ rootCid: string; pieceCid?: string; datasetId?: string }>;
-  downloadBundle: (rootCid: string) => Promise<unknown>;
-}
-
+// Synapse SDK uses storage.upload() — wraps the real API
 export async function uploadClaimBundle(
-  synapse: SynapseClient,
+  synapse: any,
   bundle: unknown
 ): Promise<{ rootCid: string; pieceCid?: string; datasetId?: string }> {
-  return synapse.uploadClaimBundle(bundle);
-}
+  if (!synapse) {
+    throw new Error('Filecoin Synapse client not initialized. Set AGENT_PRIVATE_KEY.');
+  }
 
-export async function downloadBundle(
-  synapse: SynapseClient,
-  rootCid: string
-): Promise<unknown> {
-  return synapse.downloadBundle(rootCid);
+  // Serialize the bundle to JSON bytes
+  const data = new TextEncoder().encode(JSON.stringify(bundle));
+
+  // Use the real Synapse SDK storage.upload() API
+  const result = await synapse.storage.upload(data);
+
+  return {
+    rootCid: result.rootCid ?? result.cid ?? result.toString(),
+    pieceCid: result.pieceCid ?? undefined,
+    datasetId: result.datasetId ?? undefined,
+  };
 }

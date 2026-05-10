@@ -6,6 +6,7 @@ import { LiveCallView } from './pages/LiveCallView'
 import { Analytics } from './pages/Analytics'
 import { AgentConfig } from './pages/AgentConfig'
 import { ClaimDetail } from './pages/ClaimDetail'
+import { Blockchain } from './pages/Blockchain'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/config" element={<AgentConfig />} />
           <Route path="/claims/:id" element={<ClaimDetail />} />
+          <Route path="/blockchain" element={<Blockchain />} />
         </Route>
       </Routes>
     </BrowserRouter>

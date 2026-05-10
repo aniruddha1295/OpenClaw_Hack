@@ -3,14 +3,24 @@ import { keccak256, toBytes } from 'viem';
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export interface EvidenceBundle {
-  claimId: string;
-  claimNumber: string;
-  policyNumber: string;
-  customerId: string;
-  incidentDate: string;
-  incidentDescription: string;
-  documents: string[];
-  photoCids: string[];
+  claimId?: string;
+  claim_id?: string;
+  claimNumber?: string;
+  claim_number?: string;
+  policyNumber?: string;
+  policy_number?: string;
+  customerId?: string;
+  customer_id?: string;
+  incidentDate?: string;
+  incident_date?: string;
+  incidentDescription?: string;
+  incident_description?: string;
+  documents?: string[];
+  photoCids?: string[];
+  filed_at?: string;
+  claim_type?: string;
+  call_log_id?: string;
+  timestamp?: string;
   metadata?: Record<string, JsonValue>;
 }
 

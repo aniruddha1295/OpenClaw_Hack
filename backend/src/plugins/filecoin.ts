@@ -1,58 +1,62 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
-import { createPublicClient, http } from 'viem';
-import { config } from '../config/environment.js';
+import { createPublicClient, http, type Address } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { calibration } from '@filoz/synapse-core/chains';
+import { config } from '../config/environment.js';
 
 type SynapseClient = {
-  uploadClaimBundle: (bundle: unknown) => Promise<{ rootCid: string; pieceCid?: string; datasetId?: string }>;
-  downloadBundle: (rootCid: string) => Promise<unknown>;
+  storage: {
+    upload: (data: Uint8Array | string) => Promise<{ rootCid: string; pieceCid?: string; datasetId?: string }>;
+  };
+};
+
+type FilecoinPlugin = {
+  publicClient: ReturnType<typeof createPublicClient>;
+  synapse: SynapseInstance | null;
+};
+
+// Internal type matching the real Synapse SDK instance
+type SynapseInstance = {
+  storage: any;
+  payments: any;
+  client: any;
 };
 
 declare module 'fastify' {
   interface FastifyInstance {
-    filecoin: {
-      publicClient: ReturnType<typeof createPublicClient>;
-      synapse: SynapseClient;
-    };
+    filecoin: FilecoinPlugin;
   }
 }
 
-const filecoinChain = calibration;
-
 export default fp(async function filecoinPlugin(fastify: FastifyInstance) {
   const publicClient = createPublicClient({
-    chain: filecoinChain,
+    chain: calibration,
     transport: http(config.filecoinRpcUrl),
   });
 
-  const synapseModule = await import('@filoz/synapse-sdk');
-  const synapseFactory = (synapseModule as any).createClient || (synapseModule as any).Synapse || (synapseModule as any).default;
-  if (!synapseFactory) {
-    throw new Error('Synapse SDK factory not found. Check @filoz/synapse-sdk installation.');
-  }
+  let synapseInstance: SynapseInstance | null = null;
 
-  let synapseInstance: any = null;
-  if (typeof synapseFactory === 'function') {
+  if (config.agentPrivateKey) {
     try {
-      synapseInstance = synapseFactory({ client: publicClient });
-    } catch {
-      synapseInstance = new synapseFactory({ client: publicClient });
+      const { Synapse } = await import('@filoz/synapse-sdk');
+      const account = privateKeyToAccount(config.agentPrivateKey as Address);
+
+      synapseInstance = (Synapse as any).create({
+        account,
+        chain: calibration,
+        transport: http(config.filecoinRpcUrl),
+      });
+
+      fastify.log.info('Filecoin Synapse SDK initialized successfully');
+    } catch (err) {
+      fastify.log.error({ err }, 'Failed to initialize Filecoin Synapse SDK — uploads will be skipped');
     }
   } else {
-    synapseInstance = synapseFactory;
+    fastify.log.warn('AGENT_PRIVATE_KEY not set — Filecoin uploads disabled');
   }
 
-  if (!synapseInstance) {
-    throw new Error('Synapse SDK failed to initialize.');
-  }
-
-  const synapse: SynapseClient = {
-    uploadClaimBundle: async (bundle: unknown) => synapseInstance.uploadClaimBundle(bundle),
-    downloadBundle: async (rootCid: string) => synapseInstance.downloadBundle(rootCid),
-  };
-
-  fastify.decorate('filecoin', { publicClient, synapse });
+  fastify.decorate('filecoin', { publicClient, synapse: synapseInstance });
 }, {
   name: 'filecoin',
 });
