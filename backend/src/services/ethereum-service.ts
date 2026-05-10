@@ -1,5 +1,5 @@
 import { getContract, type Address, type Hash, type PublicClient, type WalletClient, type Transport, type Chain, type Account } from 'viem';
-import ClaimRegistryAbi from '../abis/ClaimRegistry.json';
+import ClaimRegistryAbi from '../abis/ClaimRegistry.json' with { type: 'json' };
 
 export async function attestClaim(
   publicClient: PublicClient,
