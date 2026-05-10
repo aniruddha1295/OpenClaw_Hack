@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
+import { computeEvidenceHash } from '../services/attestation-service.js';
 import { ClaimsFilter, PaginatedResponse, ApiResponse, Claim } from '../types/index.js';
 
 interface ClaimWithCustomer extends Claim {
@@ -106,5 +107,52 @@ export default async function claimsRoutes(fastify: FastifyInstance) {
 
     const response: ApiResponse<ClaimDetail> = { data: detail, error: null };
     return response;
+  });
+
+  // POST /claims/:id/verify-integrity — recompute evidence hash and compare
+  fastify.post('/claims/:id/verify-integrity', async (request: FastifyRequest<{
+    Params: { id: string };
+  }>, reply) => {
+    const { id } = request.params;
+
+    const { data: claim, error: claimError } = await fastify.supabase
+      .from('claims')
+      .select('id, evidence_hash')
+      .eq('id', id)
+      .single();
+
+    if (claimError || !claim) {
+      reply.code(404);
+      return { data: null, error: 'Claim not found' } as ApiResponse<null>;
+    }
+
+    const { data: bundleRow } = await fastify.supabase
+      .from('evidence_bundles')
+      .select('bundle_json, bundle_hash')
+      .eq('claim_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!bundleRow) {
+      return {
+        data: { match: false, reason: 'No evidence bundle stored' },
+        error: null,
+      } as ApiResponse<{ match: boolean; reason?: string }>;
+    }
+
+    const hash = computeEvidenceHash(bundleRow.bundle_json as any);
+    const storedHash = bundleRow.bundle_hash as string;
+    const match = hash === storedHash && (!claim.evidence_hash || claim.evidence_hash === storedHash);
+
+    return {
+      data: {
+        match,
+        computed_hash: hash,
+        stored_hash: storedHash,
+        claim_hash: claim.evidence_hash,
+      },
+      error: null,
+    } as ApiResponse<{ match: boolean; computed_hash: string; stored_hash: string; claim_hash: string | null }>;
   });
 }

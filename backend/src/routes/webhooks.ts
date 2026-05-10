@@ -1,11 +1,22 @@
+import crypto from 'crypto';
 import { FastifyInstance } from 'fastify';
+import { config } from '../config/environment.js';
 import { ElevenLabsConversationEndedPayload } from '../types/index.js';
 import { createCallLog, updateCallLog, logToolExecution } from '../services/call-log-service.js';
 
 export default async function webhooksRoutes(fastify: FastifyInstance) {
 
   fastify.post('/webhooks/elevenlabs/conversation-ended', async (request, reply) => {
-    const payload = request.body as ElevenLabsConversationEndedPayload;
+    const rawBody = typeof request.body === 'string'
+      ? request.body
+      : JSON.stringify(request.body ?? {});
+    if (!verifyWebhookSignature(request, rawBody)) {
+      return reply.status(401).send({ success: false, error: 'Invalid webhook signature' });
+    }
+
+    const payload = (typeof request.body === 'string'
+      ? JSON.parse(request.body)
+      : request.body) as ElevenLabsConversationEndedPayload;
 
     try {
       // Check if call_log already exists for this conversation
@@ -20,6 +31,9 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
       const toolsUsed = extractToolsUsed(transcript);
       const durationSeconds = calculateDuration(payload);
 
+      const dataCollection = (payload.analysis as any)?.data_collection_results ?? null;
+      const evaluation = (payload.analysis as any)?.evaluation_criteria_results ?? null;
+
       const callLogData = {
         elevenlabs_conversation_id: payload.conversation_id,
         direction: 'inbound' as const,
@@ -33,6 +47,10 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
         summary: payload.analysis?.transcript_summary || null,
         outcome: payload.analysis?.call_successful ? 'resolved' : 'unresolved',
         tools_used: toolsUsed,
+        analysis: dataCollection,
+        evaluation,
+        metadata: payload.metadata ?? null,
+        webhook_payload: payload as any,
         ended_at: new Date().toISOString(),
       };
 
@@ -109,4 +127,30 @@ function calculateDuration(payload: ElevenLabsConversationEndedPayload): number 
     if (last > first) return Math.round(last - first);
   }
   return 0;
+}
+
+function verifyWebhookSignature(request: any, rawBody: string): boolean {
+  if (!config.elevenlabsWebhookSecret) {
+    return true;
+  }
+
+  const headerValue = request.headers['x-elevenlabs-signature']
+    || request.headers['x-signature']
+    || request.headers['x-webhook-signature'];
+
+  if (typeof headerValue !== 'string') {
+    return false;
+  }
+
+  const provided = headerValue.includes('=') ? headerValue.split('=')[1] : headerValue;
+  const expected = crypto
+    .createHmac('sha256', config.elevenlabsWebhookSecret)
+    .update(rawBody)
+    .digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }

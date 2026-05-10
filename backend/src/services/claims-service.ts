@@ -149,6 +149,7 @@ export async function fileClaim(
 
   return {
     success: true,
+    claim_id: claim.id,
     claim_number: claimNumber,
     status: 'submitted',
     message: `Your claim has been filed successfully. Your claim number is ${claimNumber}. An adjuster will be assigned within 24 to 48 hours.`,

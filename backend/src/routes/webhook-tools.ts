@@ -1,8 +1,14 @@
 import { FastifyInstance } from 'fastify';
+import { type Address, type Hash } from 'viem';
 import { lookupClaim, checkDocuments, fileClaim } from '../services/claims-service.js';
 import { createEscalation } from '../services/escalation-service.js';
 import { scheduleCallback } from '../services/callback-service.js';
 import { lookupPolicy } from '../services/policy-service.js';
+import { buildEvidenceBundle, computeEvidenceHash } from '../services/attestation-service.js';
+import { uploadClaimBundle } from '../services/filecoin-service.js';
+import { attestClaim } from '../services/ethereum-service.js';
+import { createEasClient, createEasSigner, issueAttestation, loadEasSdk } from '../services/eas-service.js';
+import { config } from '../config/environment.js';
 
 export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   // POST /tools/lookup-claim — look up a claim by claim number
@@ -85,6 +91,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
       }
       fastify.log.info({ tool: 'file-claim', args: { policy_number: body.policy_number, claim_type: body.claim_type } }, 'Tool invoked');
       const result = await fileClaim(fastify.supabase, body);
+      if (result.success && result.claim_id) {
+        try {
+          const evidence = await processClaimEvidence(fastify, result.claim_id);
+          if (evidence) {
+            return { ...result, ...evidence };
+          }
+        } catch (err) {
+          fastify.log.error(err, 'Post-claim processing failed');
+        }
+      }
       fastify.log.info({ tool: 'file-claim', success: result.success }, 'Tool completed');
       return result;
     } catch (error) {
@@ -151,4 +167,269 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
       };
     }
   });
+
+  // POST /tools/attach-document — attach a document/photo for a claim
+  fastify.post('/tools/attach-document', async (request) => {
+    try {
+      const body = request.body as { claim_id?: string; file_url?: string; file_type?: string };
+      if (!body.claim_id || !body.file_url || !body.file_type) {
+        return { success: false, message: 'I need a claim ID, file URL, and file type to attach the document.' };
+      }
+
+      const { data: claim } = await fastify.supabase
+        .from('claims')
+        .select('id, claim_number, policy_id, customer_id, incident_date, incident_description, documents_received')
+        .eq('id', body.claim_id)
+        .single();
+
+      if (!claim) {
+        return { success: false, message: 'Claim not found.' };
+      }
+
+      const { data: policy } = await fastify.supabase
+        .from('policies')
+        .select('policy_number')
+        .eq('id', claim.policy_id)
+        .single();
+
+      const nextDocs = Array.from(new Set([...(claim.documents_received || []), body.file_type]));
+
+      const { bundle, hash } = buildEvidenceBundle({
+        claimId: claim.id,
+        claimNumber: claim.claim_number,
+        policyNumber: policy?.policy_number || '',
+        customerId: claim.customer_id,
+        incidentDate: claim.incident_date,
+        incidentDescription: claim.incident_description,
+        documents: nextDocs,
+        photoCids: [],
+        metadata: {
+          file_url: body.file_url,
+          file_type: body.file_type,
+        },
+      });
+
+      const upload = await uploadClaimBundle(fastify.filecoin.synapse, {
+        claim_id: claim.id,
+        file_url: body.file_url,
+        file_type: body.file_type,
+      });
+
+      await fastify.supabase.from('evidence_bundles').insert({
+        claim_id: claim.id,
+        bundle_json: bundle,
+        bundle_hash: hash,
+        photo_cids: upload.rootCid ? [upload.rootCid] : [],
+      });
+
+      await fastify.supabase.from('filecoin_uploads').insert({
+        claim_id: claim.id,
+        root_cid: upload.rootCid,
+        piece_cid: upload.pieceCid ?? null,
+        dataset_id: upload.datasetId ?? null,
+        upload_status: 'completed',
+        pdp_status: 'pending',
+        completed_at: new Date().toISOString(),
+      });
+
+      await fastify.supabase
+        .from('claims')
+        .update({
+          documents_received: nextDocs,
+          filecoin_cid: upload.rootCid,
+          piece_cid: upload.pieceCid ?? null,
+          dataset_id: upload.datasetId ?? null,
+          evidence_hash: hash,
+          pdp_proof_status: 'pending',
+        })
+        .eq('id', claim.id);
+
+      return {
+        success: true,
+        cid: upload.rootCid,
+        message: 'Document attached and pinned to Filecoin.',
+      };
+    } catch (error) {
+      fastify.log.error(error, 'Error in attach-document');
+      return { success: false, message: 'I was unable to attach the document right now.' };
+    }
+  });
+
+  // POST /tools/escalate-to-regulator — emit EAS attestation for complaints
+  fastify.post('/tools/escalate-to-regulator', async (request) => {
+    try {
+      const body = request.body as { claim_id?: string; reason?: string; priority?: string };
+      if (!body.claim_id || !body.reason) {
+        return { success: false, message: 'I need a claim ID and reason to escalate to a regulator.' };
+      }
+
+      const { data: claim } = await fastify.supabase
+        .from('claims')
+        .select('id, claim_number, customer_id, claim_type, claimed_amount')
+        .eq('id', body.claim_id)
+        .single();
+
+      if (!claim) {
+        return { success: false, message: 'Claim not found.' };
+      }
+
+      const evidenceHash = computeEvidenceHash({
+        claim_id: claim.id,
+        claim_number: claim.claim_number,
+        reason: body.reason,
+        claim_type: claim.claim_type,
+        claimed_amount: claim.claimed_amount,
+        created_at: new Date().toISOString(),
+      } as any);
+
+      let easUid: string | null = null;
+      if (
+        config.easContractAddress &&
+        config.easSchema &&
+        config.easSchemaUid &&
+        config.agentPrivateKey
+      ) {
+        const sdk = await loadEasSdk();
+        if (!sdk) {
+          throw new Error('EAS SDK not available');
+        }
+        const eas = await createEasClient(config.easContractAddress as Address);
+        const signer = createEasSigner(config.agentPrivateKey, config.baseSepoliaRpcUrl);
+        easUid = await issueAttestation(eas, signer, {
+          recipient: fastify.ethereum.account as Address,
+          schema: config.easSchema,
+          schemaUid: config.easSchemaUid as Hash,
+          data: [
+            { name: 'claim_id', type: 'string', value: claim.id },
+            { name: 'claim_number', type: 'string', value: claim.claim_number },
+            { name: 'reason', type: 'string', value: body.reason },
+            { name: 'evidence_hash', type: 'string', value: evidenceHash },
+          ],
+        });
+      }
+
+      await createEscalation(fastify.supabase, {
+        claim_id: claim.id,
+        customer_id: claim.customer_id,
+        reason: body.reason,
+        priority: body.priority,
+      });
+
+      return {
+        success: true,
+        eas_uid: easUid,
+        message: easUid
+          ? 'Regulatory escalation submitted with attestation proof.'
+          : 'Regulatory escalation recorded (attestation skipped in demo mode).',
+      };
+    } catch (error) {
+      fastify.log.error(error, 'Error in escalate-to-regulator');
+      return { success: false, message: 'I was unable to escalate to the regulator right now.' };
+    }
+  });
+}
+
+async function processClaimEvidence(fastify: FastifyInstance, claimId: string) {
+  const { data: claim } = await fastify.supabase
+    .from('claims')
+    .select('id, claim_number, policy_id, customer_id, incident_date, incident_description, documents_received')
+    .eq('id', claimId)
+    .single();
+
+  if (!claim) {
+    return null;
+  }
+
+  const { data: policy } = await fastify.supabase
+    .from('policies')
+    .select('policy_number')
+    .eq('id', claim.policy_id)
+    .single();
+
+  const { bundle, hash } = buildEvidenceBundle({
+    claimId: claim.id,
+    claimNumber: claim.claim_number,
+    policyNumber: policy?.policy_number || '',
+    customerId: claim.customer_id,
+    incidentDate: claim.incident_date,
+    incidentDescription: claim.incident_description,
+    documents: claim.documents_received || [],
+    photoCids: [],
+  });
+
+  const upload = await uploadClaimBundle(fastify.filecoin.synapse, bundle);
+
+  await fastify.supabase.from('evidence_bundles').insert({
+    claim_id: claim.id,
+    bundle_json: bundle,
+    bundle_hash: hash,
+    photo_cids: [],
+  });
+
+  await fastify.supabase.from('filecoin_uploads').insert({
+    claim_id: claim.id,
+    root_cid: upload.rootCid,
+    piece_cid: upload.pieceCid ?? null,
+    dataset_id: upload.datasetId ?? null,
+    upload_status: 'completed',
+    pdp_status: 'pending',
+    completed_at: new Date().toISOString(),
+  });
+
+  let txHash: Hash | null = null;
+  if (fastify.ethereum.walletClient && fastify.ethereum.account) {
+    txHash = await attestClaim(
+      fastify.ethereum.publicClient,
+      fastify.ethereum.walletClient,
+      config.claimRegistryAddress as Address,
+      fastify.ethereum.account as Address,
+      upload.rootCid
+    );
+  }
+
+  let easUid: string | null = null;
+  if (
+    config.easContractAddress &&
+    config.easSchema &&
+    config.easSchemaUid &&
+    config.agentPrivateKey
+  ) {
+    try {
+      const sdk = await loadEasSdk();
+      if (!sdk) {
+        throw new Error('EAS SDK not available');
+      }
+      const eas = await createEasClient(config.easContractAddress as Address);
+      const signer = createEasSigner(config.agentPrivateKey, config.baseSepoliaRpcUrl);
+      easUid = await issueAttestation(eas, signer, {
+        recipient: fastify.ethereum.account as Address,
+        schema: config.easSchema,
+        schemaUid: config.easSchemaUid as Hash,
+        data: [
+          { name: 'claim_id', type: 'string', value: claim.id },
+          { name: 'claim_number', type: 'string', value: claim.claim_number },
+          { name: 'evidence_hash', type: 'string', value: hash },
+        ],
+      });
+    } catch (error) {
+      fastify.log.error(error, 'EAS attestation failed');
+    }
+  }
+
+  await fastify.supabase
+    .from('claims')
+    .update({
+      filecoin_cid: upload.rootCid,
+      piece_cid: upload.pieceCid ?? null,
+      dataset_id: upload.datasetId ?? null,
+      evidence_hash: hash,
+      attestation_tx_hash: txHash,
+      eas_uid: easUid,
+      agent_id: config.agentId ? Number(config.agentId) : null,
+      pdp_proof_status: 'pending',
+      attested_at: new Date().toISOString(),
+    })
+    .eq('id', claim.id);
+
+  return { cid: upload.rootCid, tx_hash: txHash, eas_uid: easUid };
 }

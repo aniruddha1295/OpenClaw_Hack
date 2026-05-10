@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, FileText, Phone, Shield, Calendar, DollarSign, User } from 'lucide-react'
 import { getClaim } from '../lib/api'
 import { ClaimStatusBadge } from '../components/ClaimStatusBadge'
+import { IntegrityCheckButton } from '../components/IntegrityCheckButton'
+import { FilecoinPanel } from '../components/FilecoinPanel'
 import type { ClaimDetail as ClaimDetailType } from '../types'
 
 export function ClaimDetail() {
@@ -51,7 +53,10 @@ export function ClaimDetail() {
           <h1 className="text-2xl font-bold text-gray-900">{claim.claim_number}</h1>
           <p className="text-sm text-gray-500 mt-1">Filed {new Date(claim.filed_at).toLocaleDateString()}</p>
         </div>
-        <ClaimStatusBadge status={claim.status} />
+        <div className="flex items-center gap-3">
+          <IntegrityCheckButton claimId={claim.id} />
+          <ClaimStatusBadge status={claim.status} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -153,6 +158,13 @@ export function ClaimDetail() {
 
         {/* Sidebar: Policy + Call Logs */}
         <div className="space-y-6">
+          <FilecoinPanel
+            cid={claim.filecoin_cid}
+            pieceCid={claim.piece_cid}
+            datasetId={claim.dataset_id}
+            txHash={claim.attestation_tx_hash}
+            easUid={claim.eas_uid}
+          />
           {claim.policy && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">

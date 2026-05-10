@@ -1,4 +1,5 @@
 import { Volume2, Wrench, MessageSquare, Shield, Globe } from 'lucide-react'
+import { AgentIdentityCard } from '../components/AgentIdentityCard'
 
 const TOOLS = [
   { name: 'lookup_claim', description: 'Look up claim details by claim number or customer info', enabled: true },
@@ -7,6 +8,8 @@ const TOOLS = [
   { name: 'check_policy', description: 'Look up policy coverage, deductible, and status', enabled: true },
   { name: 'escalate_to_human', description: 'Transfer the call to a human agent with context', enabled: true },
   { name: 'schedule_callback', description: 'Schedule a follow-up callback for the customer', enabled: true },
+  { name: 'attach_document', description: 'Attach photos or documents to an existing claim', enabled: true },
+  { name: 'escalate_to_regulator', description: 'Submit a regulatory escalation with attestation', enabled: true },
 ]
 
 const SYSTEM_PROMPT = `You are Alex, an AI phone agent for SafeGuard Insurance. You handle insurance claims, policy inquiries, and customer support calls professionally and empathetically.
@@ -72,6 +75,7 @@ export function AgentConfig() {
 
         {/* Sidebar Settings — Right (1/3) */}
         <div className="space-y-6">
+          <AgentIdentityCard />
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Volume2 className="w-5 h-5 text-gray-400" />
@@ -116,7 +120,7 @@ export function AgentConfig() {
               <div>
                 <dt className="text-xs text-gray-500">Webhook URL</dt>
                 <dd className="text-sm text-gray-700 font-mono text-xs break-all mt-1">
-                  {import.meta.env.VITE_API_URL || 'http://localhost:3005'}/api/webhooks/elevenlabs
+                  {import.meta.env.VITE_API_URL || 'http://localhost:3005'}/api/webhooks/elevenlabs/conversation-ended
                 </dd>
               </div>
             </dl>

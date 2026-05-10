@@ -6,6 +6,7 @@ import type {
   CallLogDetail,
   AnalyticsData,
   Escalation,
+  AgentIdentity,
   PaginatedResponse,
   ApiResponse,
   ClaimsFilter,
@@ -32,6 +33,17 @@ export async function getClaim(id: string): Promise<ApiResponse<ClaimDetail>> {
   return data
 }
 
+export async function verifyClaimIntegrity(id: string): Promise<ApiResponse<{
+  match: boolean
+  computed_hash?: string
+  stored_hash?: string
+  claim_hash?: string | null
+  reason?: string
+}>> {
+  const { data } = await api.post(`/api/claims/${id}/verify-integrity`)
+  return data
+}
+
 export async function getCalls(
   filter?: CallsFilter,
   page = 1,
@@ -49,6 +61,11 @@ export async function getCall(id: string): Promise<ApiResponse<CallLogDetail>> {
 
 export async function getAnalytics(): Promise<ApiResponse<AnalyticsData>> {
   const { data } = await api.get<ApiResponse<AnalyticsData>>('/api/analytics')
+  return data
+}
+
+export async function getAgentIdentity(): Promise<ApiResponse<AgentIdentity>> {
+  const { data } = await api.get<ApiResponse<AgentIdentity>>('/api/agent-identity')
   return data
 }
 

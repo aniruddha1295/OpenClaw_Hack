@@ -53,6 +53,15 @@ export interface Claim {
   documents_required: string[] | null
   documents_received: string[] | null
   notes: string | null
+  filecoin_cid?: string | null
+  piece_cid?: string | null
+  dataset_id?: string | null
+  attestation_tx_hash?: string | null
+  eas_uid?: string | null
+  evidence_hash?: string | null
+  pdp_proof_status?: 'pending' | 'verified' | 'failed' | null
+  agent_id?: number | null
+  attested_at?: string | null
   filed_at: string
   updated_at: string
   customer_name: string
@@ -184,4 +193,14 @@ export interface CallsFilter {
 export interface EscalationsFilter {
   status?: string
   priority?: string
+}
+
+export interface AgentIdentity {
+  agent_id: number
+  agent_card_cid: string | null
+  identity_registry_address: string | null
+  network: string | null
+  owner_address: string | null
+  claim_registry_address: string | null
+  registration_tx_hash: string | null
 }

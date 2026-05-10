@@ -43,6 +43,15 @@ export interface Claim {
   documents_required: string[] | null;
   documents_received: string[] | null;
   notes: string | null;
+  filecoin_cid: string | null;
+  piece_cid: string | null;
+  dataset_id: string | null;
+  attestation_tx_hash: string | null;
+  eas_uid: string | null;
+  evidence_hash: string | null;
+  pdp_proof_status: 'pending' | 'verified' | 'failed' | null;
+  agent_id: number | null;
+  attested_at: string | null;
   filed_at: string;
   updated_at: string;
 }
@@ -60,6 +69,10 @@ export interface CallLog {
   outcome: string | null;
   tools_used: string[] | null;
   recording_url: string | null;
+  analysis: Record<string, any> | null;
+  evaluation: Record<string, any> | null;
+  metadata: Record<string, any> | null;
+  webhook_payload: Record<string, any> | null;
   started_at: string;
   ended_at: string | null;
 }
@@ -149,6 +162,8 @@ export interface ElevenLabsConversationEndedPayload {
   analysis: {
     call_successful: boolean;
     transcript_summary: string;
+    data_collection_results?: Record<string, any>;
+    evaluation_criteria_results?: Record<string, any>;
   };
   conversation_initiation_client_data?: Record<string, any>;
 }
