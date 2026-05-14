@@ -29,7 +29,9 @@ interface ClaimDetail extends Claim {
 
 export default async function claimsRoutes(fastify: FastifyInstance) {
   // GET /claims — list claims with optional filters and pagination
-  fastify.get('/claims', async (request: FastifyRequest<{
+  fastify.get('/claims', {
+    schema: { tags: ['Claims'], summary: 'List claims with optional filters and pagination' }
+  }, async (request: FastifyRequest<{
     Querystring: ClaimsFilter & { page?: string; limit?: string };
   }>) => {
     const { status, claim_type, customer_id } = request.query;
@@ -70,7 +72,9 @@ export default async function claimsRoutes(fastify: FastifyInstance) {
   });
 
   // GET /claims/:id — single claim detail
-  fastify.get('/claims/:id', async (request: FastifyRequest<{
+  fastify.get('/claims/:id', {
+    schema: { tags: ['Claims'], summary: 'Get single claim details' }
+  }, async (request: FastifyRequest<{
     Params: { id: string };
   }>, reply) => {
     const { id } = request.params;
@@ -110,7 +114,9 @@ export default async function claimsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /claims/:id/verify-integrity — recompute evidence hash and compare
-  fastify.post('/claims/:id/verify-integrity', async (request: FastifyRequest<{
+  fastify.post('/claims/:id/verify-integrity', {
+    schema: { tags: ['Claims'], summary: 'Verify claim evidence integrity' }
+  }, async (request: FastifyRequest<{
     Params: { id: string };
   }>, reply) => {
     const { id } = request.params;
