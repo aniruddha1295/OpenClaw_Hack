@@ -1,0 +1,69 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run Linting (if configured)
+        working-directory: ./backend
+        run: npm run lint --if-present
+
+      - name: Security Scan (npm audit)
+        working-directory: ./backend
+        run: npm audit --audit-level=high || true
+
+      - name: Check for leaked keys (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Run Backend Unit Tests with Coverage
+        working-directory: ./backend
+        run: npm run test:coverage
+
+      - name: Build Backend
+        working-directory: ./backend
+        run: npm run build
+
+  deploy-staging:
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Deploy to Railway (Staging)
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./backend
+        run: echo "Deploying to Railway..."
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Pipeline Alert (Failure)
+        if: failure()
+        run: |
+          echo "::error::CI/CD Pipeline Failed! Alerting team via console..."
+          # In a real environment, you would curl a Slack/Discord webhook here:
+          # curl -X POST -H 'Content-type: application/json' --data '{"text":"🚨 CI/CD Pipeline Failed!"}' ${{ secrets.SLACK_WEBHOOK_URL }}

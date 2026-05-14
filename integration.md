@@ -427,3 +427,38 @@ export default function () {
 - 📄 Full Swagger API spec template (ready to edit)
 
 Feel free to request any of the above artefacts or further refinements.
+
+---
+
+## 🛠️ Peripheral Integration Specs
+
+### Wallet & Environment Setup
+The ClaimFlow Autopilot requires a Filecoin wallet to interact with the Filecoin network (Calibnet testnet) and Alkahest smart contracts.
+1. **Create a Filecoin Wallet:** Use a wallet like FoxWallet, MetaMask (with Filecoin snap), or Glif.
+2. **Export Private Key:** Extract the private key (do NOT share this key publicly or commit it to Git).
+3. **Set Environment Variables:** Update `backend/.env` with your private key:
+   ```env
+   FILECOIN_WALLET_KEY=your_private_key_here
+   AGENT_PRIVATE_KEY=your_private_key_here
+   FILECOIN_NETWORK=calibration
+   ```
+4. **Funding:** Visit the Filecoin Calibnet Faucet and request testnet FIL (tFIL).
+5. **Alkahest Contract:** Ensure the `ALKAHEST_CONTRACT_ADDRESS` is also set in your `.env` with the deployed Calibnet contract address for Arkhai's Alkahest Escrow.
+
+### Webhooks & Tools (Quick Reference)
+This project exposes REST endpoints that act as "tools" for the Agent Layer (OpenClaw). The agent calls these endpoints during voice conversations to trigger real-world actions.
+- **POST `/api/tools/create-escrow`**: Creates a trustless Alkahest escrow. Payload: `{ claim_id, payee_address, amount }`
+- **POST `/api/tools/attach-document`**: Uploads to Filecoin via Synapse SDK. Payload: `{ claim_id, document_type, cid }`
+
+### System Error Codes
+| Code | Type | Description | Resolution |
+|------|------|-------------|------------|
+| `ERR_INSUFFICIENT_FUNDS` | Blockchain | The configured Filecoin wallet does not have enough tFIL to pay for gas. | Use the Calibnet faucet to fund the wallet. |
+| `ERR_ESCROW_CREATION_FAILED` | Blockchain | Alkahest smart contract reverted the transaction. | Check ABI, contract address, and payload parameters. |
+| `ERR_RATE_LIMIT` | HTTP 429 | The client has exceeded 100 requests per minute. | Wait 1 minute before retrying. |
+| `ERR_UNAUTHORIZED` | HTTP 401 | Missing or invalid API key. | Ensure the `Authorization` header is present. |
+
+### Testing Workflows
+- **Unit Testing**: Run `npm test` or `npm run test:coverage` (Jest). Mocked blockchain tools are used.
+- **E2E Testing**: Run `cd e2e && npx cypress open` (Cypress). Covers the Dashboard UI.
+- **Load Testing**: Run `npm run test:load` (k6). Simulates 10 concurrent virtual users.

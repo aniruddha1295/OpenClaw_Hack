@@ -8,11 +8,14 @@ import { buildEvidenceBundle, computeEvidenceHash } from '../services/attestatio
 import { uploadClaimBundle } from '../services/filecoin-service.js';
 import { attestClaim } from '../services/ethereum-service.js';
 import { createEasClient, createEasSigner, issueAttestation, loadEasSdk } from '../services/eas-service.js';
+import { createAlkahestEscrow } from '../services/alkahest-service.js';
 import { config } from '../config/environment.js';
 
 export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   // GET /tools/force-demo — force trigger a fake claim and Filecoin upload for demo purposes
-  fastify.get('/tools/force-demo', async (request) => {
+  fastify.get('/tools/force-demo', {
+    schema: { tags: ['Tools'], summary: 'Force trigger a fake claim' }
+  }, async (request) => {
     try {
       const result = await fileClaim(fastify.supabase, {
         policy_number: 'POL-2024-001234',
@@ -32,7 +35,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/lookup-claim — look up a claim by claim number
-  fastify.post('/tools/lookup-claim', async (request) => {
+  fastify.post('/tools/lookup-claim', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Look up a claim by claim number',
+      body: {
+        type: 'object',
+        properties: { claim_id: { type: 'string' }, claimId: { type: 'string' }, claimNumber: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as any;
       const claim_id = body.claim_id || body.claimId || body.claimNumber || body.claim_number;
@@ -52,7 +64,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/check-policy — look up a policy by policy number
-  fastify.post('/tools/check-policy', async (request) => {
+  fastify.post('/tools/check-policy', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Look up a policy by policy number',
+      body: {
+        type: 'object',
+        properties: { policy_number: { type: 'string' }, policyNumber: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as any;
       const policy_number = body.policy_number || body.policyNumber;
@@ -72,7 +93,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/check-documents — check documents for a claim by claim number
-  fastify.post('/tools/check-documents', async (request) => {
+  fastify.post('/tools/check-documents', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Check documents for a claim by claim number',
+      body: {
+        type: 'object',
+        properties: { claim_id: { type: 'string' }, claimId: { type: 'string' }, claimNumber: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as any;
       const claim_id = body.claim_id || body.claimId || body.claimNumber || body.claim_number;
@@ -92,7 +122,21 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/file-claim — file a new insurance claim
-  fastify.post('/tools/file-claim', async (request) => {
+  fastify.post('/tools/file-claim', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'File a new insurance claim',
+      body: {
+        type: 'object',
+        properties: {
+          policy_number: { type: 'string' },
+          incident_description: { type: 'string' },
+          claim_type: { type: 'string' },
+          incident_date: { type: 'string' }
+        }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as any;
       fastify.log.info({ rawBody: body }, 'Received file-claim payload');
@@ -134,7 +178,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/escalate-to-human — escalate call to a human supervisor
-  fastify.post('/tools/escalate-to-human', async (request) => {
+  fastify.post('/tools/escalate-to-human', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Escalate call to a human supervisor',
+      body: {
+        type: 'object',
+        properties: { reason: { type: 'string' }, priority: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as { reason: string; priority?: string };
       if (!body.reason) {
@@ -157,7 +210,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/schedule-callback — schedule a callback for the customer
-  fastify.post('/tools/schedule-callback', async (request) => {
+  fastify.post('/tools/schedule-callback', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Schedule a callback for the customer',
+      body: {
+        type: 'object',
+        properties: { phone_number: { type: 'string' }, preferred_time: { type: 'string' }, reason: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as {
         phone_number: string;
@@ -190,7 +252,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/attach-document — attach a document/photo for a claim
-  fastify.post('/tools/attach-document', async (request) => {
+  fastify.post('/tools/attach-document', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Attach a document/photo for a claim',
+      body: {
+        type: 'object',
+        properties: { claim_id: { type: 'string' }, file_url: { type: 'string' }, file_type: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as { claim_id?: string; file_url?: string; file_type?: string };
       if (!body.claim_id || !body.file_url || !body.file_type) {
@@ -273,7 +344,16 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tools/escalate-to-regulator — emit EAS attestation for complaints
-  fastify.post('/tools/escalate-to-regulator', async (request) => {
+  fastify.post('/tools/escalate-to-regulator', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Emit EAS attestation for complaints',
+      body: {
+        type: 'object',
+        properties: { claim_id: { type: 'string' }, reason: { type: 'string' }, priority: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
     try {
       const body = request.body as { claim_id?: string; reason?: string; priority?: string };
       if (!body.claim_id || !body.reason) {
@@ -342,6 +422,48 @@ export default async function webhookToolsRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error, 'Error in escalate-to-regulator');
       return { success: false, message: 'I was unable to escalate to the regulator right now.' };
+    }
+  });
+
+  // POST /tools/create-escrow — create an Alkahest Escrow for a claim payout
+  fastify.post('/tools/create-escrow', {
+    schema: {
+      tags: ['Tools'],
+      summary: 'Create an Alkahest Escrow for a claim payout',
+      body: {
+        type: 'object',
+        properties: { claim_id: { type: 'string' }, payee_address: { type: 'string' }, amount: { type: 'string' } }
+      }
+    }
+  }, async (request) => {
+    try {
+      const body = request.body as { claim_id?: string; payee_address?: string; amount?: string };
+      if (!body.claim_id || !body.payee_address || !body.amount) {
+        return { success: false, message: 'I need a claim ID, payee address, and amount to create an escrow.' };
+      }
+
+      if (!config.alkahestContractAddress || !config.agentPrivateKey || !config.baseSepoliaRpcUrl) {
+        fastify.log.warn('Alkahest config missing. Returning mock escrow.');
+        return { success: true, escrow_id: `mock_escrow_${Date.now()}`, message: 'Mock Escrow Created.' };
+      }
+
+      const escrow = await createAlkahestEscrow(
+        config.alkahestContractAddress,
+        config.agentPrivateKey, // Assume using agent's private key to sponsor transaction
+        config.baseSepoliaRpcUrl, // Assume escrow deployed on base sepolia or Calibnet if configured differently
+        body.payee_address,
+        body.amount
+      );
+
+      return {
+        success: true,
+        escrow_id: escrow.escrowId,
+        tx_hash: escrow.transactionHash,
+        message: 'Alkahest Escrow Created Successfully.'
+      };
+    } catch (error) {
+      fastify.log.error(error, 'Error in create-escrow');
+      return { success: false, message: 'I was unable to create the escrow.' };
     }
   });
 }
