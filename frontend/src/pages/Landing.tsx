@@ -131,23 +131,39 @@ export default function Landing() {
         </div>
 
         {/* Floating status cards */}
-        <div className="mt-16 flex flex-wrap justify-center gap-4 max-w-2xl mx-auto">
-          <div className="card-dark rounded-xl px-6 py-4 text-left">
-            <p className="text-xs mb-1" style={{ color: '#71717a' }}>Avg processing time</p>
-            <p className="text-2xl font-black text-white">&lt; 2 min</p>
-            <p className="text-xs mt-1" style={{ color: '#71717a' }}>from call to filed claim</p>
-          </div>
-          <div className="card-dark rounded-xl px-6 py-4 text-left">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
-              <p className="text-xs" style={{ color: '#71717a' }}>Live processing</p>
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto w-full px-4">
+          {/* Card 1 — Processing time */}
+          <div className="card-dark rounded-xl p-5 text-left" style={{ borderTop: '2px solid #dc2626' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
+              <p className="text-xs font-medium" style={{ color: '#a1a1aa' }}>Avg processing time</p>
             </div>
-            <p className="text-sm mt-1 leading-relaxed" style={{ color: '#a1a1aa' }}>AI voice agent · Blockchain attestation · Filecoin storage</p>
+            <p className="text-3xl font-black text-white mb-1">&lt; 2 min</p>
+            <p className="text-xs" style={{ color: '#71717a' }}>from call to filed claim</p>
           </div>
-          <div className="card-dark rounded-xl px-6 py-4 text-left">
-            <p className="text-xs mb-1" style={{ color: '#71717a' }}>Claim accuracy</p>
-            <p className="text-2xl font-black text-white">98.7%</p>
-            <p className="text-xs mt-1" style={{ color: '#71717a' }}>verified on-chain</p>
+
+          {/* Card 2 — Live status */}
+          <div className="card-dark rounded-xl p-5 text-left" style={{ borderTop: '2px solid #22c55e' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
+              <p className="text-xs font-medium" style={{ color: '#a1a1aa' }}>System status</p>
+            </div>
+            <p className="text-sm font-bold text-white mb-2">Live</p>
+            <div className="flex flex-col gap-1">
+              {['AI voice agent', 'Blockchain attestation', 'Filecoin storage'].map(t => (
+                <span key={t} className="text-xs" style={{ color: '#71717a' }}>· {t}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 3 — Accuracy */}
+          <div className="card-dark rounded-xl p-5 text-left" style={{ borderTop: '2px solid #dc2626' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
+              <p className="text-xs font-medium" style={{ color: '#a1a1aa' }}>Claim accuracy</p>
+            </div>
+            <p className="text-3xl font-black text-white mb-1">98.7%</p>
+            <p className="text-xs" style={{ color: '#71717a' }}>verified on-chain</p>
           </div>
         </div>
       </section>
