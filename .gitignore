@@ -11,6 +11,8 @@ frontend/.env
 
 # Build outputs
 dist/
+# Keep compiled plugin output (needed for OpenClaw to load the plugin)
+!agent/plugins/claimflow-tools/dist/
 build/
 .next/
 
