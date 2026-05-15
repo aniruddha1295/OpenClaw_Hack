@@ -123,7 +123,7 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
         },
         body: JSON.stringify({
           call_id: payload.conversation_id,
-          session_id: payload.call_id,
+          session_id: payload.conversation_id,
           conversation_turns: (payload.transcript ?? []).map((t: any) => ({
             role: t.role,
             content: t.message ?? t.text ?? '',

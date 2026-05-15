@@ -4,4 +4,12 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        module: 'CommonJS',
+        moduleResolution: 'node',
+      },
+    }],
+  },
 };
