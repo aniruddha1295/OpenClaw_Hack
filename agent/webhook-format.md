@@ -101,11 +101,10 @@ interface ToolInvocation {
     {
       "tool_name": "file_claim",
       "parameters": {
-        "customer_name": "Jane Smith",
+        "policy_number": "POL-2024-001234",
         "claim_type": "auto",
         "incident_date": "2026-05-09",
-        "amount": 8500,
-        "description": "Collision damage from car accident"
+        "incident_description": "Collision damage from car accident"
       },
       "result": { "claim_number": "CLM-2026-001234", "status": "pending" },
       "status": "success",
