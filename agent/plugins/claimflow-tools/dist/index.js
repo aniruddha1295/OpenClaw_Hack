@@ -29,10 +29,9 @@ var index_default = definePluginEntry({
     });
     api.registerTool({
       name: "check_policy",
-      description: "Check whether a policy covers a specific claim type and retrieve coverage details.",
+      description: "Check whether a policy is active and retrieve coverage details.",
       parameters: Type.Object({
-        policy_number: Type.String({ description: "The customer's policy number" }),
-        claim_type: Type.String({ description: "Type of claim: auto, home, health, or life" })
+        policy_number: Type.String({ description: "The customer's policy number" })
       }),
       async execute(_id, params) {
         const result = await callBackend("/api/tools/check-policy", params);
@@ -54,11 +53,10 @@ var index_default = definePluginEntry({
       name: "file_claim",
       description: "File a new insurance claim on behalf of the customer.",
       parameters: Type.Object({
-        customer_name: Type.String({ description: "Full name of the customer" }),
+        policy_number: Type.String({ description: "The customer's policy number" }),
         claim_type: Type.String({ description: "Type of claim: auto, home, health, or life" }),
         incident_date: Type.String({ description: "Date of the incident in ISO format (YYYY-MM-DD)" }),
-        amount: Type.Number({ description: "Estimated claim amount in USD" }),
-        description: Type.String({ description: "Brief description of the incident and damages" })
+        incident_description: Type.String({ description: "Brief description of the incident and damages" })
       }),
       async execute(_id, params) {
         const result = await callBackend("/api/tools/file-claim", params);
@@ -72,8 +70,7 @@ var index_default = definePluginEntry({
         reason: Type.String({ description: "Reason for escalation" }),
         priority: Type.Union([Type.Literal("urgent"), Type.Literal("normal")], {
           description: "Priority level: urgent or normal"
-        }),
-        call_log_id: Type.Optional(Type.String({ description: "Current call log ID if available" }))
+        })
       }),
       async execute(_id, params) {
         const result = await callBackend("/api/tools/escalate-to-human", params);
@@ -85,8 +82,8 @@ var index_default = definePluginEntry({
       description: "Schedule a callback for the customer at a preferred time.",
       parameters: Type.Object({
         phone_number: Type.String({ description: "Customer phone number to call back" }),
-        scheduled_time: Type.String({ description: "Preferred callback time in ISO format" }),
-        reason: Type.String({ description: "Reason for the callback" })
+        preferred_time: Type.String({ description: "Preferred callback time \u2014 accepts natural language (e.g. 'tomorrow at 2pm', 'next Monday morning') or ISO format" }),
+        reason: Type.Optional(Type.String({ description: "Reason for the callback" }))
       }),
       async execute(_id, params) {
         const result = await callBackend("/api/tools/schedule-callback", params);

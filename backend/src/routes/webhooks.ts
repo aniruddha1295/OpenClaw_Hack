@@ -114,6 +114,30 @@ export default async function webhooksRoutes(fastify: FastifyInstance) {
         payload: { call_log_id: callLog.id },
       });
 
+      // Forward to OpenClaw for agent skill analysis (non-blocking)
+      fetch('http://localhost:18789/webhook/elevenlabs', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.WEBHOOK_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          call_id: payload.conversation_id,
+          session_id: payload.conversation_id,
+          conversation_turns: (payload.transcript ?? []).map((t: any) => ({
+            role: t.role,
+            content: t.message ?? t.text ?? '',
+            timestamp: t.time_in_call_secs ?? 0,
+          })),
+          analysis: payload.analysis ? {
+            summary: payload.analysis.transcript_summary ?? '',
+            sentiment: (payload.analysis as any).user_sentiment ?? 'neutral',
+          } : undefined,
+        }),
+      }).catch((err: unknown) => {
+        fastify.log.warn({ err }, 'OpenClaw forward failed — non-blocking');
+      });
+
       return reply.status(200).send({ success: true, call_log_id: callLog.id });
     } catch (error) {
       fastify.log.error(error, 'Error processing conversation-ended webhook');
