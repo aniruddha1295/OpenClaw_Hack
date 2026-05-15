@@ -5,6 +5,8 @@ import corsPlugin from './plugins/cors.js';
 import ethereumPlugin from './plugins/ethereum.js';
 import filecoinPlugin from './plugins/filecoin.js';
 import rawBody from 'fastify-raw-body';
+import swaggerPlugin from './plugins/swagger.js';
+import rateLimit from '@fastify/rate-limit';
 
 const fastify = Fastify({
   logger: {
@@ -26,6 +28,13 @@ await fastify.register(rawBody, {
   encoding: false,
   runFirst: true,
 });
+
+// Register security and docs
+await fastify.register(rateLimit, {
+  max: 100,
+  timeWindow: '1 minute'
+});
+await fastify.register(swaggerPlugin);
 
 // Register routes (Anish's)
 await fastify.register(import('./routes/claims.js'), { prefix: '/api' });

@@ -1,0 +1,39 @@
+{
+  "info": {
+    "name": "ClaimFlow Autopilot",
+    "description": "Postman Collection for ClaimFlow Autopilot Webhooks",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Escrow",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claim_id\": \"123\",\n  \"payee_address\": \"0x123...\",\n  \"amount\": \"10000000000\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3005/api/tools/create-escrow",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3005",
+          "path": [
+            "api",
+            "tools",
+            "create-escrow"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

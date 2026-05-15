@@ -12,7 +12,9 @@ interface CallLogDetail extends CallLog {
 
 export default async function callsRoutes(fastify: FastifyInstance) {
   // GET /calls — list call logs with optional filters and pagination
-  fastify.get('/calls', async (request: FastifyRequest<{
+  fastify.get('/calls', {
+    schema: { tags: ['Calls'], summary: 'List call logs with filters and pagination' }
+  }, async (request: FastifyRequest<{
     Querystring: CallsFilter & { page?: string; limit?: string };
   }>) => {
     const { status, direction, customer_id } = request.query;
@@ -53,7 +55,9 @@ export default async function callsRoutes(fastify: FastifyInstance) {
   });
 
   // GET /calls/:id — single call log with tool executions
-  fastify.get('/calls/:id', async (request: FastifyRequest<{
+  fastify.get('/calls/:id', {
+    schema: { tags: ['Calls'], summary: 'Get single call log detail with tool executions' }
+  }, async (request: FastifyRequest<{
     Params: { id: string };
   }>, reply) => {
     const { id } = request.params;
@@ -89,7 +93,9 @@ export default async function callsRoutes(fastify: FastifyInstance) {
     const response: ApiResponse<CallLogDetail> = { data: detail, error: null };
     return response;
   });
-
+  fastify.post('/calls/:id/tool-executions', {
+    schema: { tags: ['Calls'], summary: 'Log a tool execution for a live call' }
+  }, async (request: FastifyRequest<{
   // POST /calls/:id/tool-executions — log a tool execution during a live call
   fastify.post('/calls/:id/tool-executions', async (request: FastifyRequest<{
     Params: { id: string };
