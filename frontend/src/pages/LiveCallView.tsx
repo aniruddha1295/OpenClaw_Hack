@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Headphones, Clock, Radio, PhoneOff } from 'lucide-react'
 import { TranscriptViewer } from '../components/TranscriptViewer'
-import { ToolExecutionCard } from '../components/ToolExecutionCard'
+import { LogsPanel } from '../components/LogsPanel'
 import { useRealtimeCalls } from '../hooks/useRealtimeCalls'
-import type { CallToolExecution } from '../types'
+import { USE_MOCK, MOCK_LOGS } from '../config/mock'
+import type { CallToolExecution, ToolLog } from '../types'
 
 const mockTranscript = [
   { role: 'agent', message: 'Thank you for calling SafeGuard Insurance. My name is Alex, your AI assistant. How can I help you today?', timestamp: '0:00' },
@@ -42,7 +43,22 @@ export function LiveCallView() {
   const [callActive, setCallActive] = useState(true)
   const [duration, setDuration] = useState(0)
 
-  const allExecutions = [...mockToolExecutions, ...realtimeExecutions]
+  // Map CallToolExecution[] → ToolLog[]
+  const mapToToolLog = (exec: CallToolExecution): ToolLog => ({
+    id: exec.id,
+    tool_name: exec.tool_name,
+    parameters: exec.tool_args ?? {},
+    result: exec.tool_result ?? {},
+    status: exec.success ? 'success' : 'failed',
+    timestamp: exec.executed_at,
+    latency_ms: exec.latency_ms ?? 0,
+  })
+
+  const realtimeLogs: ToolLog[] = realtimeExecutions.map(mapToToolLog)
+  const displayLogs: ToolLog[] =
+    USE_MOCK && realtimeLogs.length === 0
+      ? MOCK_LOGS
+      : [...mockToolExecutions.map(mapToToolLog), ...realtimeLogs]
 
   useEffect(() => {
     if (!callActive) return
@@ -117,18 +133,8 @@ export function LiveCallView() {
           </div>
         </div>
 
-        {/* Tool Executions — Right (1/3 width) */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">Tool Executions</h2>
-            <p className="text-xs text-gray-400">{allExecutions.length} tools called</p>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {allExecutions.map((exec) => (
-              <ToolExecutionCard key={exec.id} execution={exec} />
-            ))}
-          </div>
-        </div>
+        {/* Tool Logs — Right (1/3 width) */}
+        <LogsPanel logs={displayLogs} streaming={callActive} />
       </div>
     </div>
   )

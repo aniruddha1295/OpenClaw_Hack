@@ -5,6 +5,9 @@ import { getClaim } from '../lib/api'
 import { ClaimStatusBadge } from '../components/ClaimStatusBadge'
 import { IntegrityCheckButton } from '../components/IntegrityCheckButton'
 import { FilecoinPanel } from '../components/FilecoinPanel'
+import { EscrowPanel } from '../components/EscrowPanel'
+import { useEvidence } from '../hooks/useEvidence'
+import { USE_MOCK } from '../config/mock'
 import type { ClaimDetail as ClaimDetailType } from '../types'
 
 export function ClaimDetail() {
@@ -12,6 +15,7 @@ export function ClaimDetail() {
   const [claim, setClaim] = useState<ClaimDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { evidence } = useEvidence(id)
 
   useEffect(() => {
     if (!id) return
@@ -159,12 +163,13 @@ export function ClaimDetail() {
         {/* Sidebar: Policy + Call Logs */}
         <div className="space-y-6">
           <FilecoinPanel
-            cid={claim.filecoin_cid}
-            pieceCid={claim.piece_cid}
-            datasetId={claim.dataset_id}
-            txHash={claim.attestation_tx_hash}
-            easUid={claim.eas_uid}
+            cid={USE_MOCK && !claim.filecoin_cid ? evidence?.cid : claim.filecoin_cid}
+            pieceCid={USE_MOCK && !claim.piece_cid ? evidence?.piece_cid : claim.piece_cid}
+            datasetId={USE_MOCK && !claim.dataset_id ? evidence?.dataset_id : claim.dataset_id}
+            txHash={USE_MOCK && !claim.attestation_tx_hash ? evidence?.tx_hash : claim.attestation_tx_hash}
+            easUid={USE_MOCK && !claim.eas_uid ? evidence?.eas_uid : claim.eas_uid}
           />
+          <EscrowPanel claimId={claim.id} />
           {claim.policy && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
