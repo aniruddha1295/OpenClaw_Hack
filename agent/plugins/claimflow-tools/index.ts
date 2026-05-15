@@ -32,10 +32,9 @@ export default definePluginEntry({
 
     api.registerTool({
       name: "check_policy",
-      description: "Check whether a policy covers a specific claim type and retrieve coverage details.",
+      description: "Check whether a policy is active and retrieve coverage details.",
       parameters: Type.Object({
         policy_number: Type.String({ description: "The customer's policy number" }),
-        claim_type: Type.String({ description: "Type of claim: auto, home, health, or life" }),
       }),
       async execute(_id, params) {
         const result = await callBackend("/api/tools/check-policy", params);
@@ -78,7 +77,6 @@ export default definePluginEntry({
         priority: Type.Union([Type.Literal("urgent"), Type.Literal("normal")], {
           description: "Priority level: urgent or normal",
         }),
-        call_log_id: Type.Optional(Type.String({ description: "Current call log ID if available" })),
       }),
       async execute(_id, params) {
         const result = await callBackend("/api/tools/escalate-to-human", params);
