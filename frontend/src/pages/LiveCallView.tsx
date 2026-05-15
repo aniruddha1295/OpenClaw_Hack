@@ -77,16 +77,16 @@ export function LiveCallView() {
   if (!callActive) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
-        <div className="p-4 bg-gray-100 rounded-full mb-4">
-          <Headphones className="w-12 h-12 text-gray-400" />
+        <div className="p-4 bg-gray-100 dark:bg-zinc-800 rounded-full mb-4">
+          <Headphones className="w-12 h-12 text-gray-400 dark:text-zinc-500" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">No Active Call</h1>
-        <p className="text-gray-500 mt-2 max-w-md">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">No Active Call</h1>
+        <p className="text-gray-500 dark:text-zinc-400 mt-2 max-w-md">
           When a call is in progress, the live transcript and tool executions will appear here in real-time.
         </p>
         <button
           onClick={() => { setCallActive(true); setDuration(0) }}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          className="mt-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
         >
           Simulate Live Call
         </button>
@@ -97,23 +97,23 @@ export function LiveCallView() {
   return (
     <div className="h-full flex flex-col">
       {/* Top Bar */}
-      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4 mb-4">
+      <div className="flex items-center justify-between bg-white dark:bg-[#111111] border border-gray-200 dark:border-zinc-800 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-green-500 animate-pulse" />
-            <span className="text-sm font-medium text-green-700">Live Call</span>
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">Live Call</span>
           </div>
-          <span className="text-sm text-gray-500">Inbound • +1-555-0101</span>
-          <span className="text-sm text-gray-500">James Wilson</span>
+          <span className="text-sm text-gray-500 dark:text-zinc-400">Inbound • +1-555-0101</span>
+          <span className="text-sm text-gray-500 dark:text-zinc-400">James Wilson</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-zinc-400">
             <Clock className="w-4 h-4" />
             {formatDuration(duration)}
           </div>
           <button
             onClick={() => setCallActive(false)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
           >
             <PhoneOff className="w-4 h-4" />
             End
@@ -124,9 +124,9 @@ export function LiveCallView() {
       {/* Two-Column Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
         {/* Transcript — Left (2/3 width) */}
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">Live Transcript</h2>
+        <div className="lg:col-span-2 bg-white dark:bg-[#111111] border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden flex flex-col">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Live Transcript</h2>
           </div>
           <div className="flex-1 overflow-y-auto">
             <TranscriptViewer transcript={mockTranscript} />
