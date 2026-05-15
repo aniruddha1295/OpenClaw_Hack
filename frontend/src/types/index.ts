@@ -204,3 +204,34 @@ export interface AgentIdentity {
   claim_registry_address: string | null
   registration_tx_hash: string | null
 }
+
+export type EscrowStatus = 'pending' | 'locked' | 'released'
+
+export interface EscrowData {
+  escrow_uid: string
+  claim_amount: number
+  status: EscrowStatus
+  confirmation_link: string
+  policy_number: string
+  created_at: string
+}
+
+export interface EvidenceData {
+  cid: string | null
+  piece_cid: string | null
+  proof_link: string | null
+  upload_status: 'pending' | 'uploaded' | 'failed' | 'mocked'
+  dataset_id: string | null
+  tx_hash: string | null
+  eas_uid: string | null
+}
+
+export interface ToolLog {
+  id: string
+  tool_name: string
+  parameters: Record<string, any>
+  result: Record<string, any>
+  status: 'success' | 'failed'
+  timestamp: string
+  latency_ms: number
+}
